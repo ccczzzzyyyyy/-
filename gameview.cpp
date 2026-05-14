@@ -37,8 +37,18 @@ void GameView::clearPlacementMode()
 
 void GameView::mousePressEvent(QMouseEvent *event)
 {
-    // Right click cancels placement mode
+    // Right click: open upgrade if on existing tower, otherwise cancel placement
     if (event->button() == Qt::RightButton) {
+        if (m_placingTower) {
+            QPointF scenePos = mapToScene(event->pos());
+            Tower *existing = m_scene->towerAt(scenePos);
+            if (existing) {
+                clearPlacementMode();
+                m_scene->selectTower(existing);
+                emit towerClicked(existing);
+                return;
+            }
+        }
         clearPlacementMode();
         return;
     }
