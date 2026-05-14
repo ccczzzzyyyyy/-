@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>bottle.png</file>
+        <file>fan.png</file>
+        <file>star.png</file>
+        <file>bomb.png</file>
+    </qresource>
+</RCC>
