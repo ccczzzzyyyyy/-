@@ -51,14 +51,15 @@ Enemy::~Enemy() {}
 
 QRectF Enemy::boundingRect() const
 {
-    // Extra margin for boss aura / crown / fast trail
     qreal extra = 0;
     if (m_type == EnemyType::Boss)
-        extra = 14;
+        extra = 14;  // crown above
     else if (m_type == EnemyType::Tank)
-        extra = 4;
+        extra = 2;   // slightly larger slime
+    else if (m_type == EnemyType::Fast)
+        extra = 2;
     qreal r = m_radius + extra + 2;
-    qreal barTop = -m_radius - 8 - extra;
+    qreal barTop = -m_radius - 14 - extra;
     return QRectF(-r, barTop, r * 2, r - barTop);
 }
 
@@ -142,141 +143,102 @@ void Enemy::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *
         break;
     }
     case EnemyType::Tank: {
-        // --- Armored hexagon with shield ---
-        int sides = 6;
-        QPolygonF hex;
-        for (int i = 0; i < sides; ++i) {
-            qreal angle = 2.0 * 3.1415926535 * i / sides - 3.1415926535 / 2.0;
-            hex << QPointF(r * qCos(angle), r * qSin(angle));
-        }
+        // ===== ELITE PURPLE SLIME =====
+        QPainterPath body;
+        body.moveTo(0, -r);
+        body.cubicTo(r * 1.3, -r, r * 1.15, r * 0.6, r * 0.95, r * 0.85);
+        body.cubicTo(r * 0.85, r * 1.15, -r * 0.85, r * 1.15, -r * 0.95, r * 0.85);
+        body.cubicTo(-r * 1.15, r * 0.6, -r * 1.3, -r, 0, -r);
 
-        QLinearGradient grad(0, -r, 0, r);
-        grad.setColorAt(0, m_color.lighter(130));
-        grad.setColorAt(0.5, m_color);
-        grad.setColorAt(1, m_color.darker(160));
+        QRadialGradient grad(0, -r * 0.3, r * 1.2);
+        grad.setColorAt(0, QColor(200, 140, 255));
+        grad.setColorAt(0.5, QColor(150, 60, 220));
+        grad.setColorAt(1, QColor(80, 20, 130));
         painter->setBrush(grad);
-        painter->setPen(QPen(m_color.darker(200), 3));
-        painter->drawPolygon(hex);
+        painter->setPen(QPen(QColor(60, 10, 100), 3));
+        painter->drawPath(body);
 
-        // Inner shield emblem
-        painter->setBrush(m_color.lighter(160));
-        painter->setPen(QPen(m_color.darker(140), 1.5));
-        painter->drawEllipse(QPointF(0, 0), r * 0.55, r * 0.55);
+        // Specular highlight
+        painter->setBrush(QColor(255, 255, 255, 100));
+        painter->setPen(Qt::NoPen);
+        painter->drawEllipse(QPointF(-r * 0.25, -r * 0.35), r * 0.4, r * 0.28);
 
-        // Cross on shield
-        painter->setPen(QPen(m_color.darker(180), 2));
-        painter->drawLine(QPointF(0, -r * 0.42), QPointF(0, r * 0.42));
-        painter->drawLine(QPointF(-r * 0.42, 0), QPointF(r * 0.42, 0));
-
-        // Bolts at corners
-        painter->setBrush(QColor(60, 60, 60));
-        painter->setPen(QPen(Qt::black, 1));
-        for (int i = 0; i < sides; ++i) {
-            qreal angle = 2.0 * 3.1415926535 * i / sides - 3.1415926535 / 2.0;
-            QPointF bolt = QPointF(r * 0.78 * qCos(angle), r * 0.78 * qSin(angle));
-            painter->drawEllipse(bolt, 2.5, 2.5);
-        }
-
-        // Angry eyes
+        // Eyes
         painter->setBrush(Qt::white);
         painter->setPen(QPen(Qt::black, 1.5));
-        painter->drawEllipse(QPointF(-r * 0.28, -r * 0.22), r * 0.22, r * 0.18);
-        painter->drawEllipse(QPointF(r * 0.28, -r * 0.22), r * 0.22, r * 0.18);
-        painter->setBrush(Qt::red);
+        painter->drawEllipse(QPointF(-r * 0.35, -r * 0.2), r * 0.32, r * 0.36);
+        painter->drawEllipse(QPointF(r * 0.35, -r * 0.2), r * 0.32, r * 0.36);
+        painter->setBrush(Qt::black);
         painter->setPen(Qt::NoPen);
-        painter->drawEllipse(QPointF(-r * 0.28, -r * 0.2), r * 0.12, r * 0.13);
-        painter->drawEllipse(QPointF(r * 0.28, -r * 0.2), r * 0.12, r * 0.13);
+        painter->drawEllipse(QPointF(-r * 0.28, -r * 0.15), r * 0.16, r * 0.18);
+        painter->drawEllipse(QPointF(r * 0.42, -r * 0.15), r * 0.16, r * 0.18);
+
+        // Mouth
+        painter->setPen(QPen(Qt::black, 1.5));
+        painter->drawArc(QRectF(-r * 0.3, r * 0.1, r * 0.6, r * 0.3), 0 * 16, 180 * 16);
         break;
     }
     case EnemyType::Boss: {
-        // --- Skill aura glow (pulsing) ---
-        if (m_hasSkill) {
-            qreal auraPhase = qAbs(qSin(static_cast<qreal>(m_hp) / m_maxHp * 6.28));
-            qreal auraR = r + 6 + auraPhase * 6;
-            QRadialGradient auraGrad(0, 0, auraR);
-            auraGrad.setColorAt(0, QColor(255, 100, 30, 0));
-            auraGrad.setColorAt(0.75, QColor(255, 80, 20, (int)(40 + auraPhase * 60)));
-            auraGrad.setColorAt(1, QColor(255, 50, 10, 0));
-            painter->setBrush(auraGrad);
-            painter->setPen(Qt::NoPen);
-            painter->drawEllipse(QPointF(0, 0), auraR, auraR);
+        // ===== KING SLIME BOSS =====
 
-            // Orbiting particles
-            for (int i = 0; i < 4; ++i) {
-                qreal angle = auraPhase * 3.14 + 2.0 * 3.1415926535 * i / 4.0;
-                QPointF orb(auraR * 0.8 * qCos(angle), auraR * 0.8 * qSin(angle));
-                painter->setBrush(QColor(255, 200, 50, 180));
-                painter->drawEllipse(orb, 3, 3);
-            }
-        }
-
-        // --- Spiked body ---
-        int spikes = 8;
+        // --- Body (bigger than elite slime) ---
         QPainterPath body;
-        for (int i = 0; i < spikes * 2; ++i) {
-            qreal angle = 2.0 * 3.1415926535 * i / (spikes * 2) - 3.1415926535 / 2.0;
-            qreal rad = (i % 2 == 0) ? r : r * 0.78;
-            QPointF pt(rad * qCos(angle), rad * qSin(angle));
-            if (i == 0)
-                body.moveTo(pt);
-            else
-                body.lineTo(pt);
-        }
-        body.closeSubpath();
+        body.moveTo(0, -r);
+        body.cubicTo(r * 1.35, -r, r * 1.2, r * 0.65, r * 1.0, r * 0.9);
+        body.cubicTo(r * 0.9, r * 1.2, -r * 0.9, r * 1.2, -r * 1.0, r * 0.9);
+        body.cubicTo(-r * 1.2, r * 0.65, -r * 1.35, -r, 0, -r);
 
-        QRadialGradient grad(-r * 0.2, -r * 0.3, r * 1.3);
-        grad.setColorAt(0, QColor(255, 130, 60));
-        grad.setColorAt(0.5, m_color);
-        grad.setColorAt(1, QColor(120, 10, 10));
+        QRadialGradient grad(0, -r * 0.25, r * 1.3);
+        grad.setColorAt(0, QColor(170, 210, 255));
+        grad.setColorAt(0.5, QColor(60, 140, 240));
+        grad.setColorAt(1, QColor(20, 60, 160));
         painter->setBrush(grad);
-        painter->setPen(QPen(QColor(80, 0, 0), 3));
+        painter->setPen(QPen(QColor(10, 40, 130), 4));
         painter->drawPath(body);
 
-        // --- Crown / horns ---
-        painter->setBrush(QColor(255, 200, 50));
-        painter->setPen(QPen(QColor(180, 130, 20), 2));
+        // Specular highlight
+        painter->setBrush(QColor(255, 255, 255, 110));
+        painter->setPen(Qt::NoPen);
+        painter->drawEllipse(QPointF(-r * 0.2, -r * 0.35), r * 0.45, r * 0.3);
+
+        // --- Crown ---
         QPolygonF crown;
-        crown << QPointF(-r * 0.55, -r * 0.9)
-              << QPointF(-r * 0.5, -r * 1.4)
-              << QPointF(-r * 0.2, -r * 1.05)
-              << QPointF(0, -r * 1.5)
-              << QPointF(r * 0.2, -r * 1.05)
-              << QPointF(r * 0.5, -r * 1.4)
-              << QPointF(r * 0.55, -r * 0.9);
+        crown << QPointF(-r * 0.7, -r * 1.05)
+              << QPointF(-r * 0.65, -r * 1.55)
+              << QPointF(-r * 0.3, -r * 1.15)
+              << QPointF(0, -r * 1.65)
+              << QPointF(r * 0.3, -r * 1.15)
+              << QPointF(r * 0.65, -r * 1.55)
+              << QPointF(r * 0.7, -r * 1.05);
+        painter->setBrush(QColor(255, 215, 40));
+        painter->setPen(QPen(QColor(200, 160, 20), 2.5));
         painter->drawPolygon(crown);
+
+        // Crown base band
+        painter->setBrush(QColor(220, 180, 30));
+        painter->setPen(QPen(QColor(180, 130, 15), 2));
+        painter->drawRect(QRectF(-r * 0.72, -r * 1.12, r * 1.44, r * 0.15));
 
         // Crown gems
         painter->setBrush(QColor(255, 50, 50));
         painter->setPen(Qt::NoPen);
-        painter->drawEllipse(QPointF(0, -r * 1.15), 3.5, 3.5);
-        painter->drawEllipse(QPointF(-r * 0.35, -r * 1.05), 2.5, 2.5);
-        painter->drawEllipse(QPointF(r * 0.35, -r * 1.05), 2.5, 2.5);
+        painter->drawEllipse(QPointF(0, -r * 1.35), 4, 4);
+        painter->drawEllipse(QPointF(-r * 0.45, -r * 1.2), 3, 3);
+        painter->drawEllipse(QPointF(r * 0.45, -r * 1.2), 3, 3);
 
-        // --- Fiery eyes ---
-        painter->setBrush(QColor(255, 255, 100));
+        // --- Eyes ---
+        painter->setBrush(Qt::white);
         painter->setPen(QPen(Qt::black, 2));
-        painter->drawEllipse(QPointF(-r * 0.28, -r * 0.15), r * 0.24, r * 0.22);
-        painter->drawEllipse(QPointF(r * 0.28, -r * 0.15), r * 0.24, r * 0.22);
-        // Pupils (slit-like)
+        painter->drawEllipse(QPointF(-r * 0.35, -r * 0.18), r * 0.34, r * 0.38);
+        painter->drawEllipse(QPointF(r * 0.35, -r * 0.18), r * 0.34, r * 0.38);
         painter->setBrush(Qt::black);
         painter->setPen(Qt::NoPen);
-        painter->drawEllipse(QPointF(-r * 0.28, -r * 0.13), r * 0.08, r * 0.16);
-        painter->drawEllipse(QPointF(r * 0.28, -r * 0.13), r * 0.08, r * 0.16);
+        painter->drawEllipse(QPointF(-r * 0.28, -r * 0.12), r * 0.18, r * 0.2);
+        painter->drawEllipse(QPointF(r * 0.42, -r * 0.12), r * 0.18, r * 0.2);
 
-        // --- Scary mouth with teeth ---
+        // Mouth
         painter->setPen(QPen(Qt::black, 2));
-        painter->setBrush(QColor(40, 0, 0));
-        painter->drawArc(QRectF(-r * 0.38, r * 0.1, r * 0.76, r * 0.4), 0 * 16, 180 * 16);
-        // Teeth
-        painter->setBrush(Qt::white);
-        painter->setPen(QPen(Qt::black, 1));
-        for (int i = 0; i < 3; ++i) {
-            qreal tx = (i - 1) * r * 0.2;
-            painter->drawPolygon(QPolygonF()
-                << QPointF(tx - r * 0.06, r * 0.28)
-                << QPointF(tx + r * 0.06, r * 0.28)
-                << QPointF(tx, r * 0.42));
-        }
+        painter->drawArc(QRectF(-r * 0.35, r * 0.15, r * 0.7, r * 0.35), 0 * 16, 180 * 16);
         break;
     }
     }
@@ -285,7 +247,10 @@ void Enemy::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *
     qreal barWidth = r * 2;
     qreal barHeight = 4;
     qreal barY = -r - 10;
-    if (m_type == EnemyType::Boss) barY -= 10; // below crown
+    if (m_type == EnemyType::Boss)
+        barY = -r - 26; // below crown
+    else if (m_type == EnemyType::Tank)
+        barY = -r - 12;
     qreal hpRatio = qBound(0.0, static_cast<qreal>(m_hp) / m_maxHp, 1.0);
 
     painter->setBrush(QColor(40, 40, 40));
