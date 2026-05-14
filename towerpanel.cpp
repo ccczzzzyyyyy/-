@@ -60,7 +60,7 @@ TowerPanel::TowerPanel(QWidget *parent)
     TowerStats bottleStats = TowerStats{100, 120, 15, 500, false, 0, QColor(100,200,255), "瓶子塔"};
     TowerStats fanStats    = TowerStats{150, 100, 10, 600, true, 60, QColor(150,255,150), "风扇塔"};
     TowerStats starStats   = TowerStats{200, 180, 25, 900, false, 0, QColor(255,255,100), "星星塔"};
-    TowerStats bombStats   = TowerStats{300, 90, 50, 1500, true, 80, QColor(255,120,50), "炸弹塔"};
+    TowerStats bombStats   = TowerStats{300, 90, 45, 1500, true, 80, QColor(255,120,50), "炸弹塔"};
 
     auto makeBtn = [&](const QString &text, const QString &style) -> QPushButton* {
         auto *btn = new QPushButton(text);
@@ -92,7 +92,7 @@ TowerPanel::TowerPanel(QWidget *parent)
     m_bombBtn = makeBtn("💣 炸弹塔 - 300💰",
         "QPushButton { background-color: #c0392b; color: white; border: 2px solid #e74c3c; border-radius: 6px; }"
         "QPushButton:hover { background-color: #e74c3c; }");
-    m_bombBtn->setToolTip("溅射伤害 | 伤害:20 | 范围:90 | 溅射范围:80");
+    m_bombBtn->setToolTip("溅射伤害 | 伤害:45 | 范围:90 | 溅射范围:80");
     towerLayout->addWidget(m_bombBtn);
 
     layout->addWidget(towerGroup);

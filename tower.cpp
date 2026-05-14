@@ -30,7 +30,7 @@ TowerStats Tower::statsForKind(TowerKind kind)
     case TowerKind::Star:
         return { 200, 180, 25, 900, false, 0, QColor(255, 255, 100), "星星塔", true, 5 };
     case TowerKind::Bomb:
-        return { 300, 90, 20, 1500, true, 80, QColor(255, 120, 50), "炸弹塔" };
+        return { 300, 90, 45, 1500, true, 80, QColor(255, 120, 50), "炸弹塔" };
     }
     return {};
 }
